@@ -18,6 +18,23 @@ func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
 	}
 }
 
+func pathIsExcluded(path string, opt LoggingOption) bool {
+	switch val := opt.Value.(type) {
+	case []string:
+		for _, p := range val {
+			if path == p {
+				return true
+			}
+		}
+	case string:
+		if path == val {
+			return true
+		}
+	}
+
+	return false
+}
+
 func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 	// create a search for the options
 	search := NewOptionsSearch(opts...)
@@ -31,10 +48,8 @@ func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 
 		// do not log for any excluded paths (i.e. /v1/status)
 		if excludes, ok := search.Find("exclude"); ok {
-			for _, path := range excludes.Value.([]string) {
-				if ctx.Request.URL.Path == path {
-					return
-				}
+			if pathIsExcluded(ctx.Request.URL.Path, excludes) {
+				return
 			}
 		}
 
