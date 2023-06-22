@@ -18,7 +18,10 @@ func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
 	}
 }
 
-func GinZeroLogger() gin.HandlerFunc {
+func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
+	// create a search for the options
+	search := NewOptionsSearch(opts...)
+
 	return func(ctx *gin.Context) {
 		// capture request duration
 		t := time.Now()
@@ -26,14 +29,39 @@ func GinZeroLogger() gin.HandlerFunc {
 		// process request
 		ctx.Next()
 
+		// do not log for any excluded paths (i.e. /v1/status)
+		if excludes, ok := search.Find("exclude"); ok {
+			for _, path := range excludes.Value.([]string) {
+				if ctx.Request.URL.Path == path {
+					return
+				}
+			}
+		}
+
 		// create a logging event and augment it
 		var le *zerolog.Event
+
 		switch sts := ctx.Writer.Status(); {
 		case sts >= 500:
+			if dle, ok := search.Find("default500LogLevel"); ok {
+				le = dle.Value.(*zerolog.Event)
+				break
+			}
+
 			le = log.Error()
 		case sts >= 400:
+			if dle, ok := search.Find("default400LogLevel"); ok {
+				le = dle.Value.(*zerolog.Event)
+				break
+			}
+
 			le = log.Warn()
 		default:
+			if dle, ok := search.Find("default200LogLevel"); ok {
+				le = dle.Value.(*zerolog.Event)
+				break
+			}
+
 			le = log.Info()
 		}
 
