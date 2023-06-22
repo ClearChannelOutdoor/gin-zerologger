@@ -19,8 +19,8 @@ import (
 func main() {
   r := gin.New()
 
-	// attach logger and recovery middleware
-	r.Use(gzl.GinZeroLogger())
+  // attach logger and recovery middleware
+  r.Use(gzl.GinZeroLogger())
 
   // attach routes
   r.GET("/", func(c *gin.Context) {
