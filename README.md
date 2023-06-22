@@ -90,7 +90,7 @@ Multiple options can be provided to the `GinZeroLogger()` function. For example,
 ```go
 r.Use(gzl.GinZeroLogger(
   NewLoggingOption("exclude", []string{"/health"}),
-  NewLoggingOption("default200LogLevel", log.Debug())
+  NewLoggingOption("default200LogLevel", log.Debug()),
 ))
 ```
 

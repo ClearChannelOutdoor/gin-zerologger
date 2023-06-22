@@ -20,12 +20,13 @@ func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
 
 func defaultLogLevelEvent(sts int, search *optionsSearch) *zerolog.Event {
 	for lvl, key := range map[int]string{
-		500: "default500LogLevel",
-		400: "default400LogLevel",
-		300: "default300LogLevel",
-		200: "default200LogLevel",
+		5: "default500LogLevel",
+		4: "default400LogLevel",
+		3: "default300LogLevel",
+		2: "default200LogLevel",
 	} {
-		if sts < lvl {
+		// convert a XXX error to X for comparison purposes
+		if sts/100 != lvl {
 			continue
 		}
 
