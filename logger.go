@@ -18,6 +18,61 @@ func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
 	}
 }
 
+func defaultLogLevelEvent(sts int, search *optionsSearch) *zerolog.Event {
+	for lvl, key := range map[int]string{
+		500: "default500LogLevel",
+		400: "default400LogLevel",
+		300: "default300LogLevel",
+		200: "default200LogLevel",
+	} {
+		if sts < lvl {
+			continue
+		}
+
+		// check to see if there is a specific logging level to use
+		if dle, ok := search.Find(key); ok {
+			switch val := dle.Value.(type) {
+			case *zerolog.Event:
+				return val
+			case string:
+				return getLogEventForString(val)
+			}
+		}
+	}
+
+	// default 500s to warn
+	if sts >= 500 {
+		return log.Error()
+	}
+
+	// default 400s to warn
+	if sts >= 400 {
+		return log.Warn()
+	}
+
+	// default to info
+	return log.Info()
+}
+
+func getLogEventForString(level string) *zerolog.Event {
+	switch level {
+	case "debug":
+		return log.Debug()
+	case "info":
+		return log.Info()
+	case "warn":
+		return log.Warn()
+	case "error":
+		return log.Error()
+	case "fatal":
+		return log.Fatal()
+	case "panic":
+		return log.Panic()
+	default:
+		return log.Info()
+	}
+}
+
 func pathIsExcluded(path string, opt LoggingOption) bool {
 	switch val := opt.Value.(type) {
 	case []string:
@@ -54,31 +109,7 @@ func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 		}
 
 		// create a logging event and augment it
-		var le *zerolog.Event
-
-		switch sts := ctx.Writer.Status(); {
-		case sts >= 500:
-			if dle, ok := search.Find("default500LogLevel"); ok {
-				le = dle.Value.(*zerolog.Event)
-				break
-			}
-
-			le = log.Error()
-		case sts >= 400:
-			if dle, ok := search.Find("default400LogLevel"); ok {
-				le = dle.Value.(*zerolog.Event)
-				break
-			}
-
-			le = log.Warn()
-		default:
-			if dle, ok := search.Find("default200LogLevel"); ok {
-				le = dle.Value.(*zerolog.Event)
-				break
-			}
-
-			le = log.Info()
-		}
+		le := defaultLogLevelEvent(ctx.Writer.Status(), search)
 
 		// add request detail to the error
 		le = le.
