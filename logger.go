@@ -3,6 +3,7 @@ package ginzerologger
 import (
 	"bytes"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,10 +23,10 @@ func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
 
 func defaultLogLevelEvent(sts int, search *optionsSearch) *zerolog.Event {
 	for lvl, key := range map[int]string{
-		5: "default500LogLevel",
-		4: "default400LogLevel",
-		3: "default300LogLevel",
-		2: "default200LogLevel",
+		5: "default500",
+		4: "default400",
+		3: "default300",
+		2: "default200",
 	} {
 		// convert a XXX error to X for comparison purposes
 		if sts/100 != lvl {
@@ -76,7 +77,7 @@ func getLogEventForString(level string) *zerolog.Event {
 	}
 }
 
-func pathIsExcluded(path string, opt LoggingOption) bool {
+func pathIsExcluded(path string, opt *loggingOption) bool {
 	switch val := opt.Value.(type) {
 	case []string:
 		for _, p := range val {
@@ -93,7 +94,7 @@ func pathIsExcluded(path string, opt LoggingOption) bool {
 	return false
 }
 
-func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
+func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 	// create a search for the options
 	search := newOptionsSearch(opts...)
 
@@ -101,22 +102,23 @@ func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 		// capture request duration
 		t := time.Now()
 
-		var buf bytes.Buffer
+		var bdy []byte
 
-		// check to see if we should log the request body
-		if _, ok := search.Find("logRequestBody"); ok {
+		// check to see if we should collect the request body
+		if _, ok := search.Find("includeRequestBody"); ok {
 			// read the request body
-			io.Copy(&buf, ctx.Request.Body)
+			bdy, _ = io.ReadAll(ctx.Request.Body)
 
-			// restore the io.ReadCloser to its original state
-			ctx.Request.Body = io.NopCloser(&buf)
+			// restore the io.ReadCloser to its original state for downstream
+			// processing...
+			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bdy))
 		}
 
 		// process request
 		ctx.Next()
 
 		// do not log for any excluded paths (i.e. /v1/status)
-		if excludes, ok := search.Find("exclude"); ok {
+		if excludes, ok := search.Find("excludes"); ok {
 			if pathIsExcluded(ctx.Request.URL.Path, excludes) {
 				return
 			}
@@ -131,6 +133,19 @@ func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 			Str("method", ctx.Request.Method).
 			Str("path", ctx.Request.URL.Path).
 			Int("status", ctx.Writer.Status())
+
+		// check to see if request body should be included in the log
+		if opt, ok := search.Find("includeRequestBody"); ok && len(bdy) > 0 {
+			if logSts, ok := opt.Value.(HTTPStatus); ok {
+				if ctx.Writer.Status()/100 == int(logSts) {
+					if ct := ctx.Request.Header.Get("content-type"); strings.Contains(ct, "application/json") {
+						le.RawJSON("body", bdy)
+					} else {
+						le.Str("body", string(bdy))
+					}
+				}
+			}
+		}
 
 		// add query if there is one
 		if ctx.Request.URL.RawQuery != "" {

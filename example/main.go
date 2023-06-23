@@ -1,0 +1,56 @@
+package main
+
+import (
+	"io"
+	"net/http"
+
+	gzl "github.com/clearchanneloutdoor/gin-zerologger"
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
+)
+
+func main() {
+	r := gin.New()
+
+	// attach logger and recovery middleware
+	r.Use(gzl.GinZeroLogger(
+		gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan200),
+		gzl.PathExclusion("/notlogged"),
+		gzl.LogLevelEqualToOrGreaterThan200(log.Debug()),
+	))
+
+	// attach routes
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, map[string]string{
+			"message": "hello world!",
+		})
+	})
+
+	r.GET("/400", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusNotFound, map[string]string{
+			"error": "something not found",
+		})
+	})
+
+	r.GET("/500", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "internal server error",
+		})
+	})
+
+	r.POST("/logbody", func(ctx *gin.Context) {
+		bdy, _ := io.ReadAll(ctx.Request.Body)
+		ctx.JSON(http.StatusAccepted, map[string]string{
+			"body": string(bdy),
+		})
+	})
+
+	r.GET("/notlogged", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, map[string]string{
+			"message": "not logged",
+		})
+	})
+
+	// start the server
+	r.Run(":8080")
+}
