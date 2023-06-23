@@ -1,6 +1,8 @@
 package ginzerologger
 
 import (
+	"bytes"
+	"io"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -93,11 +95,22 @@ func pathIsExcluded(path string, opt LoggingOption) bool {
 
 func GinZeroLogger(opts ...LoggingOption) gin.HandlerFunc {
 	// create a search for the options
-	search := NewOptionsSearch(opts...)
+	search := newOptionsSearch(opts...)
 
 	return func(ctx *gin.Context) {
 		// capture request duration
 		t := time.Now()
+
+		var buf bytes.Buffer
+
+		// check to see if we should log the request body
+		if _, ok := search.Find("logRequestBody"); ok {
+			// read the request body
+			io.Copy(&buf, ctx.Request.Body)
+
+			// restore the io.ReadCloser to its original state
+			ctx.Request.Body = io.NopCloser(&buf)
+		}
 
 		// process request
 		ctx.Next()
