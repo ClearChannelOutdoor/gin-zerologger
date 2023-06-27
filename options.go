@@ -36,28 +36,28 @@ func IncludeRequestBody(sts HTTPStatus) *loggingOption {
 	return newLoggingOption("includeRequestBody", sts)
 }
 
-func LogLevelEqualToOrGreaterThan200[T logLevel](val T) *loggingOption {
+func LogLevel200[T logLevel](val T) *loggingOption {
 	return &loggingOption{
 		Key:   "default200",
 		Value: val,
 	}
 }
 
-func LogLevelEqualToOrGreaterThan300[T logLevel](val T) *loggingOption {
+func LogLevel300[T logLevel](val T) *loggingOption {
 	return &loggingOption{
 		Key:   "default300",
 		Value: val,
 	}
 }
 
-func LogLevelEqualToOrGreaterThan400[T logLevel](val T) *loggingOption {
+func LogLevel400[T logLevel](val T) *loggingOption {
 	return &loggingOption{
 		Key:   "default400",
 		Value: val,
 	}
 }
 
-func LogLevelEqualToOrGreaterThan500[T logLevel](val T) *loggingOption {
+func LogLevel500[T logLevel](val T) *loggingOption {
 	return &loggingOption{
 		Key:   "default500",
 		Value: val,
