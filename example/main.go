@@ -16,7 +16,7 @@ func main() {
 	r.Use(gzl.GinZeroLogger(
 		gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan200),
 		gzl.PathExclusion("/notlogged"),
-		gzl.LogLevelEqualToOrGreaterThan200(log.Debug()),
+		gzl.LogLevel200(log.Debug()),
 	))
 
 	// attach routes

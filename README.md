@@ -34,14 +34,30 @@ func main() {
 
 Voila! Requests issued to the gin server will be logged via rs/zerolog!
 
+## Example
 
-### Options
+To see an example with a few of the logging options in use, check out the [`example/main.go`](example/main.go) file in this repository.
 
-But wait, there's more! The `GinZeroLogger()` function accepts a variadic list of options to further tailor how request logging is handled. The following options are available:
+### Logging Options
 
-#### Logging Options
+But wait, there's more! The `GinZeroLogger()` function accepts a variadic list of options to further tailor how request logging is handled. Logging options can be provided to the GinZeroLogger at construction...
 
-Logging options can be provided to the GinZeroLogger at construction...
+##### IncludeRequestBody
+
+To include the request body in the log output, use the `IncludeRequestBody` option. The `IncludeRequestBody` option accepts an `HTTPStatus` value. For example, to include the request body in the log output for all HTTP responses with a status of 500 or greater:
+
+```go
+r.Use(gzl.GinZeroLogger(
+  gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan500)
+))
+```
+
+The following status options are supported:
+
+* `HTTPStatusCodes.EqualToOrGreaterThan500`
+* `HTTPStatusCodes.EqualToOrGreaterThan400`
+* `HTTPStatusCodes.EqualToOrGreaterThan300`
+* `HTTPStatusCodes.EqualToOrGreaterThan200`
 
 ##### PathExclusion
 
@@ -53,44 +69,44 @@ r.Use(gzl.GinZeroLogger(
 ))
 ```
 
-##### LogLevelEqualToOrGreaterThan200
+##### LogLevel200
 
-To override the log level for requests that return a 200 status code (the default is `log.Info()`), use the `LogLevelEqualToOrGreaterThan200` option. The `LogLevelEqualToOrGreaterThan200` option accepts either a string representing the log level to use, or a `*zerolog.Event` for requests that return a 200 status code. For example, to set the log level to `log.Debug()` for requests that return a 200 status code:
+To override the log level for requests that return a 200 status code (the default is `log.Info()`), use the `LogLevel200` option. The `LogLevel200` option accepts either a string representing the log level to use, or a `*zerolog.Event` for requests that return a 200 status code. For example, to set the log level to `log.Debug()` for requests that return a 200 status code:
 
 ```go
 r.Use(gzl.GinZeroLogger(
-  gzl.LogLevelEqualToOrGreaterThan200(log.Debug()),
+  gzl.LogLevel200(log.Debug()),
 ))
 ```
 
-##### LogLevelEqualToOrGreaterThan400
+##### LogLevel400
 
-To override the log level for requests that return a 400 status code (the default is `log.Warn()`), use the `LogLevelEqualToOrGreaterThan400` option. The `LogLevelEqualToOrGreaterThan400` option accepts a either string representing the log level to use, or a `*zerolog.Event` for requests that return a 400 status code. For example, to set the log level to `log.Info()` for requests that return a 400 status code:
+To override the log level for requests that return a 400 status code (the default is `log.Warn()`), use the `LogLevel400` option. The `LogLevel400` option accepts a either string representing the log level to use, or a `*zerolog.Event` for requests that return a 400 status code. For example, to set the log level to `log.Info()` for requests that return a 400 status code:
 
 ```go
 r.Use(gzl.GinZeroLogger(
-  gzl.LogLevelEqualToOrGreaterThan400(log.Info()),
+  gzl.LogLevel400(log.Info()),
 ))
 ```
 
-##### LogLevelEqualToOrGreaterThan500
+##### LogLevel500
 
-To override the log level for requests that return a 500 status code (the default is `log.Error()`), use the `LogLevelEqualToOrGreaterThan500` option. The `LogLevelEqualToOrGreaterThan500` option accepts either a string representing the log level to use, or a `*zerolog.Event` for requests that return a 500 status code. For example, to set the log level to `log.Warn()` for requests that return a 500 status code:
+To override the log level for requests that return a 500 status code (the default is `log.Error()`), use the `LogLevel500` option. The `LogLevel500` option accepts either a string representing the log level to use, or a `*zerolog.Event` for requests that return a 500 status code. For example, to set the log level to `log.Warn()` for requests that return a 500 status code:
 
 ```go
 r.Use(gzl.GinZeroLogger(
-  gzl.LogLevelEqualToOrGreaterThan500(log.Warn()),
+  gzl.LogLevel500(log.Warn()),
 ))
 ```
 
 ##### Providing multiple options
 
-Multiple options can be provided to the `GinZeroLogger()` function. For example, to exclude the `/health` endpoint from logging and set the log level to `log.Debug()` for requests that return a 200 status code:
+Multiple options can be provided to the `GinZeroLogger()` function. For example, to exclude the `/health` endpoint from logging and set the log level to `log.Debug()` for requests that result in a 200 status code:
 
 ```go
 r.Use(gzl.GinZeroLogger(
   gzl.PathExclusion("/health", "/status"),
-  gzl.LogLevelEqualToOrGreaterThan200(log.Debug()),
+  gzl.LogLevel200(log.Debug()),
 ))
 ```
 
