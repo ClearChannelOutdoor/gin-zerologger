@@ -3,6 +3,7 @@ package ginzerologger
 import (
 	"bytes"
 	"io"
+	"reflect"
 	"strings"
 	"time"
 
@@ -15,66 +16,12 @@ type LoggingDetails interface {
 	Details() map[string]any
 }
 
-func augmentLogEvent(err LoggingDetails, le *zerolog.Event) {
+func augmentLogEvent(err LoggingDetails, lctx *zerolog.Context) {
+	lc := *lctx
 	for k, v := range err.Details() {
-		le = le.Interface(k, v)
+		lc = lc.Interface(k, v)
 	}
-}
-
-func defaultLogLevelEvent(sts int, search *optionsSearch) *zerolog.Event {
-	for lvl, key := range map[int]string{
-		5: "default500",
-		4: "default400",
-		3: "default300",
-		2: "default200",
-	} {
-		// convert a XXX error to X for comparison purposes
-		if sts/100 != lvl {
-			continue
-		}
-
-		// check to see if there is a specific logging level to use
-		if dle, ok := search.Find(key); ok {
-			switch val := dle.Value.(type) {
-			case *zerolog.Event:
-				return val
-			case string:
-				return getLogEventForString(val)
-			}
-		}
-	}
-
-	// default 500s to warn
-	if sts >= 500 {
-		return log.Error()
-	}
-
-	// default 400s to warn
-	if sts >= 400 {
-		return log.Warn()
-	}
-
-	// default to info
-	return log.Info()
-}
-
-func getLogEventForString(level string) *zerolog.Event {
-	switch level {
-	case "debug":
-		return log.Debug()
-	case "info":
-		return log.Info()
-	case "warn":
-		return log.Warn()
-	case "error":
-		return log.Error()
-	case "fatal":
-		return log.Fatal()
-	case "panic":
-		return log.Panic()
-	default:
-		return log.Info()
-	}
+	*lctx = lc
 }
 
 func pathIsExcluded(path string, opt *loggingOption) bool {
@@ -92,6 +39,94 @@ func pathIsExcluded(path string, opt *loggingOption) bool {
 	}
 
 	return false
+}
+
+func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, msg ...string) {
+	var lgr *zerolog.Event
+	l := lctx.Logger()
+
+	for lvl, key := range map[int]string{
+		5: "default500",
+		4: "default400",
+		3: "default300",
+		2: "default200",
+	} {
+		// convert a XXX error to X for comparison purposes
+		if sts/100 != lvl {
+			continue
+		}
+
+		// check to see if there is a specific logging level to use
+		if dle, ok := search.Find(key); ok {
+			switch val := dle.Value.(type) {
+			case *zerolog.Event:
+				if val != nil {
+					t := reflect.ValueOf(val).Elem().FieldByName("level")
+					switch t.Int() {
+					case -1:
+						lgr = l.Trace()
+					case 0:
+						lgr = l.Debug()
+					case 1:
+						lgr = l.Info()
+					case 2:
+						lgr = l.Warn()
+					case 3:
+						lgr = l.Error()
+					case 4:
+						lgr = l.Fatal()
+					case 5:
+						lgr = l.Panic()
+					default:
+						lgr = l.Info()
+					}
+				}
+			case string:
+				switch val {
+				case "trace":
+					lgr = l.Trace()
+				case "debug":
+					lgr = l.Debug()
+				case "info":
+					lgr = l.Info()
+				case "warn":
+					lgr = l.Warn()
+				case "error":
+					lgr = l.Error()
+				case "fatal":
+					lgr = l.Fatal()
+				case "panic":
+					lgr = l.Panic()
+				default:
+					lgr = l.Info()
+				}
+			}
+		}
+	}
+
+	// default 400s to warn
+	if sts >= 400 {
+		lgr = l.Warn()
+	}
+
+	// default 500s to warn
+	if sts >= 500 {
+		lgr = l.Error()
+	}
+
+	// default to info
+	if lgr == nil {
+		lgr = l.Info()
+	}
+
+	// send the log event with a message if one is provided
+	if len(msg) > 0 && msg[0] != "" {
+		lgr.Msg(msg[0])
+		return
+	}
+
+	// send the log event
+	lgr.Send()
 }
 
 func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
@@ -124,11 +159,10 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 			}
 		}
 
-		// create a logging event and augment it
-		le := defaultLogLevelEvent(ctx.Writer.Status(), search)
+		var lctx zerolog.Context
 
 		// add request detail to the error
-		le = le.
+		lctx = log.With().
 			Dur("duration", time.Since(t)).
 			Str("method", ctx.Request.Method).
 			Str("path", ctx.Request.URL.Path).
@@ -137,7 +171,7 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 		// add X-Correlation-ID and X-Request-ID if the exist
 		for _, hdr := range []string{"X-Correlation-ID", "X-Request-ID"} {
 			if rid := ctx.Request.Header.Get(hdr); rid != "" {
-				le = le.Str(hdr, rid)
+				lctx = lctx.Str(hdr, rid)
 			}
 		}
 
@@ -146,9 +180,9 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 			if logSts, ok := opt.Value.(HTTPStatus); ok {
 				if ctx.Writer.Status()/100 == int(logSts) {
 					if ct := ctx.Request.Header.Get("content-type"); strings.Contains(ct, "application/json") {
-						le.RawJSON("body", bdy)
+						lctx = lctx.RawJSON("body", bdy)
 					} else {
-						le.Str("body", string(bdy))
+						lctx = lctx.Str("body", string(bdy))
 					}
 				}
 			}
@@ -156,38 +190,35 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 
 		// add query if there is one
 		if ctx.Request.URL.RawQuery != "" {
-			le = le.Str("query", ctx.Request.URL.RawQuery)
-		}
-
-		// request has a single error
-		if len(ctx.Errors) == 1 {
-			err := ctx.Errors[0].Err
-			le = le.Err(err)
-
-			// check to see if the error has any additional details
-			if dErr, ok := err.(LoggingDetails); ok {
-				augmentLogEvent(dErr, le)
-			}
-
-			le.Send()
-			return
+			lctx = lctx.Str("query", ctx.Request.URL.RawQuery)
 		}
 
 		// more than 1 error
 		if len(ctx.Errors) > 1 {
 			err := ctx.Errors.Last().Err
-			le = le.Err(err)
+			lctx = lctx.Err(err)
 
 			// check to see if the error has any additional details
 			if dErr, ok := err.(LoggingDetails); ok {
-				augmentLogEvent(dErr, le)
+				augmentLogEvent(dErr, &lctx)
 			}
 
-			le.Msg(ctx.Errors.String())
+			logEventWithContext(ctx.Writer.Status(), search, lctx, ctx.Errors.String())
 			return
 		}
 
+		// request has a single error
+		if len(ctx.Errors) == 1 {
+			err := ctx.Errors[0].Err
+			lctx = lctx.Err(err)
+
+			// check to see if the error has any additional details
+			if dErr, ok := err.(LoggingDetails); ok {
+				augmentLogEvent(dErr, &lctx)
+			}
+		}
+
 		// send the details
-		le.Send()
+		logEventWithContext(ctx.Writer.Status(), search, lctx)
 	}
 }

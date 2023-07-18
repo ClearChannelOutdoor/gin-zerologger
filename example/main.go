@@ -9,6 +9,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type customError struct {
+	msg string
+}
+
+func (ce *customError) Error() string {
+	return ce.msg
+}
+
+func (ce *customError) Details() map[string]interface{} {
+	return map[string]interface{}{
+		"custom": "error",
+		"test":   true,
+	}
+}
+
 func main() {
 	r := gin.New()
 
@@ -33,6 +48,12 @@ func main() {
 	})
 
 	r.GET("/500", func(ctx *gin.Context) {
+		// demonstrate LoggingDetails interface usage
+		ce := &customError{
+			msg: "an internal server error",
+		}
+		ctx.Error(ce)
+
 		ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "internal server error",
 		})
