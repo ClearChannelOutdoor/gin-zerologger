@@ -24,23 +24,6 @@ func augmentLogEvent(err LoggingDetails, lctx *zerolog.Context) {
 	*lctx = lc
 }
 
-func pathIsExcluded(path string, opt *loggingOption) bool {
-	switch val := opt.Value.(type) {
-	case []string:
-		for _, p := range val {
-			if path == p {
-				return true
-			}
-		}
-	case string:
-		if path == val {
-			return true
-		}
-	}
-
-	return false
-}
-
 func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, msg ...string) {
 	var lgr *zerolog.Event
 	l := lctx.Logger()
@@ -127,6 +110,23 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 
 	// send the log event
 	lgr.Send()
+}
+
+func pathIsExcluded(path string, opt *loggingOption) bool {
+	switch val := opt.Value.(type) {
+	case []string:
+		for _, p := range val {
+			if path == p {
+				return true
+			}
+		}
+	case string:
+		if path == val {
+			return true
+		}
+	}
+
+	return false
 }
 
 func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
