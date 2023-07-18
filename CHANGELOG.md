@@ -4,6 +4,10 @@ All notable changes in gin-zerologger will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.0] - 2023-07-18
+
+- When present in the context, including `X-Correlation-ID` and `X-Request-ID` in the log output
+
 ## [1.2.0] - 2023-06-27
 
 - Updated documentation to include logging options for request body

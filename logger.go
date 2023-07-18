@@ -134,6 +134,13 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 			Str("path", ctx.Request.URL.Path).
 			Int("status", ctx.Writer.Status())
 
+		// add X-Correlation-ID and X-Request-ID if the exist
+		for _, hdr := range []string{"X-Correlation-ID", "X-Request-ID"} {
+			if rid := ctx.Request.Header.Get(hdr); rid != "" {
+				le = le.Str(hdr, rid)
+			}
+		}
+
 		// check to see if request body should be included in the log
 		if opt, ok := search.Find("includeRequestBody"); ok && len(bdy) > 0 {
 			if logSts, ok := opt.Value.(HTTPStatus); ok {
