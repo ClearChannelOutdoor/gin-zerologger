@@ -32,7 +32,7 @@ func main() {
 		gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan200),
 		gzl.PathExclusion("/notlogged"),
 		gzl.LogLevel200(log.Debug()),
-		gzl.IncludeContextKeyPair("clientID", "random"),
+		gzl.IncludeContextValues("clientID", "random"),
 	))
 
 	// attach routes
