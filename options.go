@@ -32,6 +32,14 @@ func newLoggingOption(key string, value any) *loggingOption {
 	}
 }
 
+func IncludeContextValues(keys ...string) *loggingOption {
+	if len(keys) > 0 {
+		return newLoggingOption("includeContext", keys)
+	}
+
+	return nil
+}
+
 func IncludeRequestBody(sts HTTPStatus) *loggingOption {
 	return newLoggingOption("includeRequestBody", sts)
 }

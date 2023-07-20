@@ -175,6 +175,15 @@ func GinZeroLogger(opts ...*loggingOption) gin.HandlerFunc {
 			}
 		}
 
+		// determine if any custom gin context keys should be added to the log
+		if keys, ok := search.Find("includeContext"); ok {
+			for _, key := range keys.Value.([]string) {
+				if val, ok := ctx.Get(key); ok {
+					lctx = lctx.Interface(key, val)
+				}
+			}
+		}
+
 		// check to see if request body should be included in the log
 		if opt, ok := search.Find("includeRequestBody"); ok && len(bdy) > 0 {
 			if logSts, ok := opt.Value.(HTTPStatus); ok {

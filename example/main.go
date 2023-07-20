@@ -32,6 +32,7 @@ func main() {
 		gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan200),
 		gzl.PathExclusion("/notlogged"),
 		gzl.LogLevel200(log.Debug()),
+		gzl.IncludeContextValues("clientID", "random"),
 	))
 
 	// attach routes
@@ -69,6 +70,15 @@ func main() {
 	r.GET("/notlogged", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, map[string]string{
 			"message": "not logged",
+		})
+	})
+
+	r.GET("/logcontext", func(ctx *gin.Context) {
+		ctx.Set("clientID", "12345")
+		ctx.Set("random", "random value")
+
+		ctx.JSON(http.StatusOK, map[string]string{
+			"message": "context included",
 		})
 	})
 

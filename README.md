@@ -59,6 +59,16 @@ The following status options are supported:
 * `HTTPStatusCodes.EqualToOrGreaterThan300`
 * `HTTPStatusCodes.EqualToOrGreaterThan200`
 
+##### IncludeContextValues
+
+To include values from the gin context in the log output, use the `IncludeContextValues` option. The `IncludeContextValues` option accepts a variadic number of strings representing the keys of the values to include in the log output. For example, to include the values of the `ClientID` and `SessionID` gin context key/value pairs in the log output:
+
+```go
+r.Use(gzl.GinZeroLogger(
+  gzl.IncludeContextValues("ClientID", "SessionID")
+))
+```
+
 ##### PathExclusion
 
 To exclude certain paths from the logging middleware, use the `PathExclusion` option. The `PathExclusion` option accepts a variadic number of strings representing the paths to exclude from logging. For example, to exclude the `/routeToExclude` and `/anotherRouteToExclude` endpoints from logging:
