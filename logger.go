@@ -88,12 +88,12 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 	}
 
 	// default 400s to warn
-	if sts >= 400 {
+	if sts >= 400 && lgr == nil {
 		lgr = l.Warn()
 	}
 
 	// default 500s to warn
-	if sts >= 500 {
+	if sts >= 500 && lgr == nil {
 		lgr = l.Error()
 	}
 
