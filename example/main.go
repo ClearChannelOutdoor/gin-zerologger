@@ -3,9 +3,11 @@ package main
 import (
 	"io"
 	"net/http"
+	"os"
 
 	gzl "github.com/clearchanneloutdoor/gin-zerologger"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,11 +29,23 @@ func (ce *customError) Details() map[string]interface{} {
 func main() {
 	r := gin.New()
 
+	// if a global logging level was passed in via an environment variable
+	// set the global logging level to that level
+	if lvl, ok := os.LookupEnv("LOGGING_LEVEL"); ok {
+		l, err := zerolog.ParseLevel(lvl)
+		if err != nil {
+			log.Fatal().Err(err).Msg("unable to parse log level")
+		}
+		zerolog.SetGlobalLevel(l)
+		log.Info().Str("level", l.String()).Msg("global logging level set")
+	}
+
 	// attach logger and recovery middleware
 	r.Use(gzl.GinZeroLogger(
 		gzl.IncludeRequestBody(gzl.HTTPStatusCodes.EqualToOrGreaterThan200),
 		gzl.PathExclusion("/notlogged"),
 		gzl.LogLevel200(log.Debug()),
+		gzl.LogLevel300(log.Info()),
 		gzl.IncludeContextValues("clientID", "random"),
 	))
 
@@ -39,6 +53,12 @@ func main() {
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, map[string]string{
 			"message": "hello world!",
+		})
+	})
+
+	r.GET("/300", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusPermanentRedirect, map[string]string{
+			"message": "redirecting",
 		})
 	})
 

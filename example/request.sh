@@ -4,6 +4,11 @@
 echo should log at debug level
 curl -XGET localhost:8080
 
+# should be a log.Info
+echo
+echo should log at info level
+curl -XGET localhost:8080/300
+
 # should be a log.Warn
 echo
 echo should log at warn level
