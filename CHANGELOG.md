@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - for example, when global logging level is set to `info` while a 200-level logging is set to `debug`, the logger will suppress any 200-level log messages (thus honoring the `info` global logging level)
 - Enhancement added to the example to support an optionally provided global logging level via an environment variable `LOGGING_LEVEL`
 
-## [1.3.2] - 2024-12-06
+## [1.3.2] - 2023-12-06
+
+- Fixed issue where log level override for 400s and 500s was not being applied correctly
 
 ## [1.3.1] - 2023-07-20
 
