@@ -99,9 +99,6 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 			// let's honor global log level by not logging anything
 			return
 		}
-		// honor the level-specific log level if it is set
-		lgr.Send()
-		return
 	}
 
 	// no level-specific logging level was set; let's set up defaults
