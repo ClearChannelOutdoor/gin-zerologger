@@ -51,6 +51,9 @@ func main() {
 
 	// attach routes
 	r.GET("/", func(ctx *gin.Context) {
+		log.Trace().Str("level", "trace").Msg("running / route...")
+		log.Debug().Str("level", "debug").Msg("running / route...")
+		log.Info().Str("level", "info").Msg("running / route...")
 		ctx.JSON(http.StatusOK, map[string]string{
 			"message": "hello world!",
 		})
