@@ -28,6 +28,8 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 	var lgr *zerolog.Event
 	l := lctx.Logger()
 
+	// lvlspc is a flag to indicate if there is a level-specific logging level
+	lvlspc := false
 	for lvl, key := range map[int]string{
 		5: "default500",
 		4: "default400",
@@ -41,6 +43,9 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 
 		// check to see if there is a specific logging level to use
 		if dle, ok := search.Find(key); ok {
+			// there is a level-specific logging level
+			lvlspc = true
+
 			switch val := dle.Value.(type) {
 			case *zerolog.Event:
 				if val != nil {
@@ -87,6 +92,16 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 		}
 	}
 
+	if lvlspc {
+		// the global log level could be higher than the level-specific log level
+		// in that case, the lgr will be nil
+		if lgr == nil {
+			// let's honor global log level by not logging anything
+			return
+		}
+	}
+
+	// no level-specific logging level was set; let's set up defaults
 	// default 400s to warn
 	if sts >= 400 && lgr == nil {
 		lgr = l.Warn()
