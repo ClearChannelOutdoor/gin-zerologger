@@ -4,6 +4,10 @@ All notable changes in gin-zerologger will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.4] - 2025-04-01
+
+- Fixed an issue where 500-level responses were logged at `warn` level instead of `error` by default
+
 ## [1.3.3] - 2025-02-28
 
 - Fixed an issue when global logging level conflicts with level-specific logging, log messages were produced unexpectedly:

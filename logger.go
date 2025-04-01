@@ -102,14 +102,14 @@ func logEventWithContext(sts int, search *optionsSearch, lctx zerolog.Context, m
 	}
 
 	// no level-specific logging level was set; let's set up defaults
-	// default 400s to warn
-	if sts >= 400 && lgr == nil {
-		lgr = l.Warn()
-	}
-
 	// default 500s to warn
 	if sts >= 500 && lgr == nil {
 		lgr = l.Error()
+	}
+
+	// default 400s to warn
+	if sts >= 400 && lgr == nil {
+		lgr = l.Warn()
 	}
 
 	// default to info
