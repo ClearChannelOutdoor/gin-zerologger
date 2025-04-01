@@ -24,6 +24,12 @@ echo
 echo should log at debug level and include the request body
 curl -XPOST localhost:8080/logbody --data "{\"test\":true}"
 
+# should not log at debug level
+echo
+echo should not log at debug level
+curl -XGET localhost:8080/notlogged
+
+
 # should be a log.Debug with correlation ID
 echo
 echo should log at debug level with correlation ID
